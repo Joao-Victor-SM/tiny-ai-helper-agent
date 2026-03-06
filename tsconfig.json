@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "es2022",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "target": "ES2021",
+    "declaration": true,
+    "noImplicitOverride": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "rootDir": "",
+    "outDir": "dist"
+  }
+}
