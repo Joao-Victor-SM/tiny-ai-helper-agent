@@ -15,7 +15,7 @@ import {
 } from "./tools/memoryTools";
 
 import preChats from "./preChats";
-import { modelPromise } from "./lmstudio";
+import { client, modelPromise } from "./lmstudio";
 
 const args = process.argv.slice(2);
 
@@ -33,7 +33,7 @@ const tools = [
   removeReminderByTextTool,
 ];
 
-async function runPrompt(userInput: string) {
+async function runPrompt(userInput: string, closeOnExecute = false) {
   const model = await modelPromise;
   const chat = Chat.empty();
 
@@ -43,6 +43,7 @@ async function runPrompt(userInput: string) {
   await model.act(chat, tools, {
     onMessage: (message) => console.log(message.toString()),
   });
+  if(closeOnExecute) return process.exit(1)
 }
 
 async function runInteractive() {
@@ -61,14 +62,16 @@ async function runInteractive() {
   }
 }
 
+
 async function runCli() {
   const input = args.join(" ");
-  await runPrompt(input);
+  await runPrompt(input, true);
 }
 
 async function main() {
   if (args.length) return await runCli();
-  await runInteractive();
+  else await runInteractive();
+  
 }
 
 main();

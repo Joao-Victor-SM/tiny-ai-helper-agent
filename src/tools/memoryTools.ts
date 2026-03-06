@@ -1,21 +1,10 @@
 import { tool } from "@lmstudio/sdk";
 import zod from "zod";
+import redis, { nextReminderId, REDIS_DEFAULT_BUCKET } from "../utils/redis";
 
-const memory = new Map<string, string>();
-// Reminders are stored as a nested map: bucket -> id -> reminder text
-const reminderBuckets = new Map<string, Map<number, string>>();
-const DEFAULT_BUCKET = "default";
-let reminderId = 1;
 
-function getReminderBucket() {
-  let bucket = reminderBuckets.get(DEFAULT_BUCKET);
-  if (!bucket) {
-    bucket = new Map<number, string>();
-    reminderBuckets.set(DEFAULT_BUCKET, bucket);
-  }
-  return bucket;
-}
 
+//Memory 
 export const storeMemoryTool = tool({
   name: "store_memory",
   description: "Store a piece of information for later retrieval",
@@ -23,17 +12,22 @@ export const storeMemoryTool = tool({
     key: zod.string(),
     value: zod.union([zod.string(), zod.number()]),
   },
-  implementation: ({ key, value }) => {
-    memory.set(key, String(value));
+  implementation: async ({ key, value }) => {
+    await redis.set(`memory:${key}`, String(value));
     return `Stored memory for key: ${key}`;
   },
 });
+
 export const checkKeys = tool({
   name: "memory_keys",
   description: "Return a list of all keys currently stored in memory",
   parameters: {},
-  implementation: () => Array.from(memory.keys()),
+  implementation: async () => {
+    const keys = await redis.keys("memory:*");
+    return keys.map(k => k.replace(/^memory:/, ""));
+  },
 });
+
 export const recallMemoryTool = tool({
   name: "recall_memory",
   description:
@@ -41,22 +35,25 @@ export const recallMemoryTool = tool({
   parameters: {
     key: zod.string(),
   },
-  implementation: ({ key }) => {
-    return memory.get(key) ?? "No memory found for that key";
+  implementation: async ({ key }) => {
+    const val = await redis.get(`memory:${key}`);
+    return val ?? "No memory found for that key";
   },
 });
 
+// Reminder
 export const addReminderTool = tool({
   name: "add_reminder",
   description:
     "Store a reminder message to recall later. Use when the user asks to be reminded of something.",
   parameters: {
     reminder: zod.string(),
+    bucket: zod.string().optional(),
   },
-  implementation: ({ reminder }) => {
-    const id = reminderId++;
-    const bucket = getReminderBucket();
-    bucket.set(id, reminder);
+  implementation: async ({ reminder, bucket }) => {
+    const b = bucket || REDIS_DEFAULT_BUCKET;
+    const id = await nextReminderId(b);
+    await redis.hSet(`reminder:${b}`, id.toString(), reminder);
     return `Saved reminder #${id}: ${reminder}`;
   },
 });
@@ -64,12 +61,15 @@ export const addReminderTool = tool({
 export const getRemindersTool = tool({
   name: "get_reminders",
   description: "Return a list of all saved reminders with their ids.",
-  parameters: {},
-  implementation: () => {
-    const bucket = getReminderBucket();
-    if (!bucket.size) return "No reminders saved.";
-    return Array.from(bucket.entries()).map(([id, text]) => ({
-      id,
+  parameters: {
+    bucket: zod.string().optional(),
+  },
+  implementation: async ({ bucket }) => {
+    const b = bucket || REDIS_DEFAULT_BUCKET;
+    const reminders = await redis.hGetAll(`reminder:${b}`);
+    if (!Object.keys(reminders).length) return "No reminders saved.";
+    return Object.entries(reminders).map(([id, text]) => ({
+      id: Number(id),
       reminder: text,
     }));
   },
@@ -81,13 +81,13 @@ export const removeReminderTool = tool({
     "Remove a reminder by id. Always call get_reminders first to know the ids.",
   parameters: {
     id: zod.number(),
+    bucket: zod.string().optional(),
   },
-  implementation: ({ id }) => {
-    const bucket = getReminderBucket();
-    const reminder = bucket.get(id);
+  implementation: async ({ id, bucket }) => {
+    const b = bucket || REDIS_DEFAULT_BUCKET;
+    const reminder = await redis.hGet(`reminder:${b}`, id.toString());
     if (!reminder) return `No reminder found for id ${id}`;
-
-    bucket.delete(id);
+    await redis.hDel(`reminder:${b}`, id.toString());
     return `Removed reminder #${id}: ${reminder}`;
   },
 });
@@ -98,15 +98,15 @@ export const removeReminderByTextTool = tool({
     "Remove a reminder by matching its content. Always call get_reminders first to see the exact text.",
   parameters: {
     reminder: zod.string(),
+    bucket: zod.string().optional(),
   },
-  implementation: ({ reminder }) => {
-    const bucket = getReminderBucket();
-    if (!bucket.size) return "No reminders saved.";
-
+  implementation: async ({ reminder, bucket }) => {
+    const b = bucket || REDIS_DEFAULT_BUCKET;
+    const reminders = await redis.hGetAll(`reminder:${b}`);
     const target = reminder.toLowerCase();
-    for (const [id, text] of bucket.entries()) {
+    for (const [id, text] of Object.entries(reminders)) {
       if (text.toLowerCase().includes(target)) {
-        bucket.delete(id);
+        await redis.hDel(`reminder:${b}`, id);
         return `Removed reminder #${id}: ${text}`;
       }
     }

@@ -13,6 +13,7 @@
   "dependencies": {
     "@lmstudio/sdk": "^1.5.0",
     "axios": "^1.13.6",
+    "redis": "^5.11.0",
     "tsx": "^4.21.0"
   },
   "gitHead": "d95ce2feb067b4eec446c673155631ee1734e982",
