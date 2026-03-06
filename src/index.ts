@@ -15,14 +15,13 @@ import {
 } from "./tools/memoryTools";
 
 import preChats from "./preChats";
-import { client, modelPromise } from "./lmstudio";
+import {  modelPromise } from "./lmstudio";
 
 const args = process.argv.slice(2);
 
 const tools = [
   bootPCtool,
   shutdownPCtool,
-  NmultiplicationTool,
   expEvalTool,
   storeMemoryTool,
   recallMemoryTool,

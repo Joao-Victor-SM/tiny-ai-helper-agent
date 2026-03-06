@@ -1,12 +1,6 @@
 import { tool } from "@lmstudio/sdk";
 import zod from "zod";
 
-export const NmultiplicationTool = tool({
-  name: "multiplication",
-  description: "Give a list of numbers, return their multiplication",
-  parameters: { numbers: zod.array(zod.number()) },
-  implementation: ({ numbers }) => numbers.reduce((acc, curr) => acc * curr, 1),
-});
 
 function safeMath(expr: string) {
   if (expr.length > 200) throw new Error("too long");
