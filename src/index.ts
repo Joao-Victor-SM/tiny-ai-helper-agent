@@ -3,7 +3,7 @@ import { createInterface } from "readline/promises";
 import { stdin, stdout } from "process";
 
 import { bootPCtool, shutdownPCtool } from "./tools/powerPCTools";
-import { NmultiplicationTool, expEvalTool } from "./tools/mathTools";
+import {  expEvalTool } from "./tools/mathTools";
 import {
   addReminderTool,
   checkKeys,
@@ -16,6 +16,7 @@ import {
 
 import preChats from "./preChats";
 import {  modelPromise } from "./lmstudio";
+import { initRedis } from "./utils/redis";
 
 const args = process.argv.slice(2);
 
@@ -68,6 +69,7 @@ async function runCli() {
 }
 
 async function main() {
+  await initRedis(); 
   if (args.length) return await runCli();
   else await runInteractive();
   

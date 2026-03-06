@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const bootPCtool = tool({
   name: "boot-pc",
-  description: "boots up the computer",
+  description: "boots up the computer, execute if user asks for the computer to be turned on",
   parameters: {},
   implementation: async () => {
     try {
@@ -16,7 +16,7 @@ export const bootPCtool = tool({
 });
 export const shutdownPCtool = tool({
   name: "shutdown-pc",
-  description: "shutdown the computer",
+  description: "shutdown the computer execute if user asks for the computer to be turned off",
   parameters: {},
   implementation: async () => {
     try {
