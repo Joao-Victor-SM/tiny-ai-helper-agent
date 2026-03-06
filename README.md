@@ -34,3 +34,4 @@ This will compile the TypeScript code in the `src/` directory to JavaScript in t
 - [Documentation](https://lmstudio.ai/docs/welcome)
 - [Discord](https://discord.gg/6Q7Xn6MRVS)
 - [Twitter](https://twitter.com/LMStudioAI)
+# tiny-ai-helper-agent
